@@ -1,0 +1,20 @@
+/* styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default light mode */
+:root {
+  --background: 0 0% 100%; /* White */
+  --foreground: 240 10% 3.9%; /* Dark text */
+}
+
+/* Dark mode */
+.dark {
+  --background: 240 10% 3.9%; /* Dark background */
+  --foreground: 0 0% 100%; /* Light text */
+}
+
+body {
+  @apply bg-background text-foreground transition-colors duration-300;
+}
