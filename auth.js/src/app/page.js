@@ -68,6 +68,9 @@ export default function Component() {
                 height={100}
               />
             )}
+            {session.user.name && (
+              <h3  className="text-xl font-semibold mb-4">{session.user.name}</h3>
+            )}
             <button
               onClick={() => signOut()}
               className="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition"
@@ -79,7 +82,7 @@ export default function Component() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4">Not signed in</h2>
             <button
-              onClick={() => signIn()}
+              onClick={() => signIn("github")}
               className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
             >
               Sign in with GitHub

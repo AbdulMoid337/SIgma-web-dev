@@ -10,7 +10,4 @@ const handler = NextAuth({
   ],
 })
 
-// Ensure the handler is set up correctly for API routes
 export { handler as GET, handler as POST }
-
-// Add a check for req.query.nextauth in your handler if neede
