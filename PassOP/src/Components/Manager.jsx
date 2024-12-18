@@ -1,12 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import { v4 as uuidv4 } from "uuid";
 
 const Manager = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    url: '',
-    name: '',
-    password: ''
+    url: "",
+    name: "",
+    password: "",
   });
+  const [existingData, setExistingData] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    const data = JSON.parse(localStorage.getItem("InputValues")) || [];
+    setExistingData(data);
+  }, []);
+
+  const notify = () => toast("Please Enter The Details");
+  const notifyCopy = (data) => toast(`${data} copied to clipboard!`);
+  const deleteToast = () => toast("Deleted Successfully");
+  const editToast = () => toast("Updated Successfully");
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -16,41 +30,69 @@ const Manager = () => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Create or retrieve existing array from localStorage
-    const existingData = JSON.parse(localStorage.getItem('InputValues')) || [];
-    // Ensure existingData is an array
-    const dataArray = Array.isArray(existingData) ? existingData : [];
-    // Add new formData to the array
-    dataArray.push(formData);
-    // Save updated array back to localStorage
-    localStorage.setItem('InputValues', JSON.stringify(dataArray));
-    // Optionally, you can clear the form after saving
-    setFormData({ url: '', name: '', password: '' });
+    if (!formData.url || !formData.name || !formData.password) {
+      notify();
+      return;
+    }
+
+    if (editingId) {
+      const updatedData = existingData.map((entry) =>
+        entry.id === editingId ? { ...formData, id: editingId } : entry
+      );
+      localStorage.setItem("InputValues", JSON.stringify(updatedData));
+      setExistingData(updatedData);
+      editToast();
+      setEditingId(null);
+    } else {
+      const newEntry = { ...formData, id: uuidv4() };
+      const updatedData = [...existingData, newEntry];
+      localStorage.setItem("InputValues", JSON.stringify(updatedData));
+      setExistingData(updatedData);
+    }
+
+    setFormData({ url: "", name: "", password: "" });
   };
 
-  // Retrieve existing data from localStorage
-  const existingData = JSON.parse(localStorage.getItem('InputValues')) || [];
+  const handleDelete = (id) => {
+    const updatedData = existingData.filter((data) => data.id !== id);
+    localStorage.setItem("InputValues", JSON.stringify(updatedData));
+    setExistingData(updatedData);
+  };
+
+  const handleEdit = (data) => {
+    setFormData({
+      url: data.url,
+      name: data.name,
+      password: data.password,
+    });
+    setEditingId(data.id);
+  };
 
   return (
-    <div className="absolute inset-0 -z-10 h-full w-full flex flex-col items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_40%,#63e_100%)] overflow-y-auto">
-      {/* PassOP Logo */}
-      <div className="flex flex-col items-center mb-5">
-        <div className="logo font-bold text-white text-3xl mb-2">
+    <div className="flex flex-col items-center min-h-screen px-5 py-24 overflow-y-auto">
+      <ToastContainer className="pt-12" />
+      <div className="flex flex-col items-center mt-0 mb-5">
+        <div className="logo font-bold text-white mt-0 text-3xl mb-2 top-24 absolute">
           <span className="text-green-500"> &lt;</span>
           <span>Pass</span>
           <span className="text-green-500">OP/&gt;</span>
         </div>
-        <h2 className="text-white text-xl">Your own password Manager</h2>
+        <h2 className="text-white absolute top-32 text-xl">
+          Your own password Manager
+        </h2>
       </div>
 
       {/* Input Fields */}
-      <form className="flex flex-col items-center w-full max-w-md mx-auto mb-2" onSubmit={handleSubmit}>
+      <form
+        className="flex flex-col items-center w-full max-w-md mx-auto mb-2"
+        onSubmit={handleSubmit}
+      >
         <input
           type="text"
           name="url"
@@ -82,42 +124,145 @@ const Manager = () => {
             className="absolute right-2 top-2"
           >
             {showPassword ? (
-              <i className="ri-eye-off-line" style={{ fontSize: '20px', color: 'white' }}></i>
+              <i className="ri-eye-close-fill"></i>
             ) : (
-              <i className="ri-eye-line" style={{ fontSize: '20px', color: 'white' }}></i>
+              <i className="ri-eye-fill"></i>
             )}
           </button>
         </div>
         <button className="bg-green-700 text-white rounded p-2 w-full flex items-center justify-center hover:bg-green-600 transition duration-300">
-          Add Password
+          Save
           <lord-icon
             src="https://cdn.lordicon.com/hqymfzvj.json"
             trigger="hover"
-            style={{ width: '25px', height: '25px', transition: 'transform 0.3s', paddingLeft: '4px' }}
+            className="cursor-pointer"
+            style={{
+              width: "25px",
+              height: "25px",
+              transition: "transform 0.3s",
+              paddingLeft: "4px",
+            }}
           />
         </button>
       </form>
 
       {/* Scrollable container for the table */}
-      <div className="overflow-y-auto max-h-60 w-auto mx-auto">
+      <div className=" w-auto mx-auto md:w-auto">
         {/* Table to display saved passwords */}
         {existingData.length === 0 ? (
           <p className="text-center text-gray-500">No passwords found.</p>
         ) : (
-          <table className="min-w-full w-[70vw] bg-white border border-gray-300 rounded-lg shadow-md">
+          <table className="min-w-full w-[70vw] bg-white border border-gray-300 rounded-lg shadow-md overflow-hidden mb-16 mt-6 text-center">
             <thead className="bg-green-700 text-white sticky top-0">
               <tr>
                 <th className="py-1 px-4 border-b text-center">URL</th>
                 <th className="py-1 px-4 border-b text-center">Username</th>
-                <th className="py-1 px-4 border-b text-center">Password</th>
+                <th className="py-1 px-4  border-b text-center">Password</th>
+                <th className="py-1 px-4 border-b text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {existingData.map((data, index) => (
-                <tr key={index} className="hover:bg-gray-100">
-                  <td className="py-1 px-4 border-b text-center">{data.url}</td>
-                  <td className="py-1 px-4 border-b text-center">{data.name}</td>
-                  <td className="py-1 px-4 border-b text-center">{data.password}</td>
+              {existingData.map((data) => (
+                <tr key={data.id} className="hover:bg-gray-100">
+                  <td className="py-1 border-b text-center">
+                    <div className="flex items-center justify-center">
+                      <a
+                        href={data.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-center"
+                      >
+                        {data.url}
+                      </a>
+                      <lord-icon
+                        src="https://cdn.lordicon.com/iykgtsbt.json"
+                        trigger="hover"
+                        style={{
+                          cursor: "pointer",
+                          width: "25px",
+                          height: "25px",
+                          transition: "transform 0.3s",
+                          paddingLeft: "4px",
+                        }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(data.url);
+                          notifyCopy("URL");
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td className="py-1 border-b text-center">
+                    <div className="flex items-center justify-center">
+                      {data.name}
+                      <lord-icon
+                        src="https://cdn.lordicon.com/iykgtsbt.json"
+                        trigger="hover"
+                        style={{
+                          cursor: "pointer",
+                          width: "25px",
+                          height: "25px",
+                          transition: "transform 0.3s",
+                          paddingLeft: "4px",
+                        }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(data.name);
+                          notifyCopy("Username");
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td className="py-1 border-b text-center">
+                    <div className="flex items-center justify-center">
+                      {data.password.length > 3
+                        ? data.password.slice(0, 3) +
+                          "*".repeat(data.password.length - 3)
+                        : data.password}
+                      <lord-icon
+                        src="https://cdn.lordicon.com/iykgtsbt.json"
+                        trigger="hover"
+                        style={{
+                          cursor: "pointer",
+                          width: "25px",
+                          height: "25px",
+                          transition: "transform 0.3s",
+                          paddingLeft: "4px",
+                        }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(data.password);
+                          notifyCopy("Password");
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td className="py-1 px-4 border-b text-center">
+                    <div className="flex gap-3">
+                      <lord-icon
+                        src="https://cdn.lordicon.com/gwlusjdu.json"
+                        trigger="hover"
+                        style={{
+                          cursor: "pointer",
+                          width: "25px",
+                          height: "20px",
+                          transition: "transform 0.3s",
+                        }}
+                        onClick={() => handleEdit(data)}
+                      ></lord-icon>
+                      <lord-icon
+                        src="https://cdn.lordicon.com/skkahier.json"
+                        trigger="hover"
+                        style={{
+                          cursor: "pointer",
+                          width: "25px",
+                          height: "20px",
+                          transition: "transform 0.3s",
+                        }}
+                        onClick={() => {
+                          handleDelete(data.id);
+                          deleteToast();
+                        }}
+                      ></lord-icon>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
